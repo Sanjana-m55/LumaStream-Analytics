@@ -6,6 +6,9 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.68+-green.svg)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+
+DEMO : https://lumastream-analytics.onrender.com/
+
 ## 📋 Table of Contents
 
 - [Overview](#overview)
