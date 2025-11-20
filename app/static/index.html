@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>LumaStream Analytics — v3</title>
+
+<link rel="stylesheet" href="/static/neon.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="scanline"></div>
+
+<div class="container">
+  
+  <!-- HEADER -->
+  <header class="main-header">
+    <h1 class="title">
+      <span class="title-icon">⚡</span>
+      LumaStream Analytics
+      <span class="version-badge">v3.0</span>
+    </h1>
+    <div class="status-bar">
+      <span class="status-item"><span class="pulse-dot"></span> System Active</span>
+      <span class="status-item" id="liveCounters"></span>
+    </div>
+  </header>
+
+  <!-- CONTROL PANEL -->
+  <section class="controls-section glass-card">
+    
+    <div class="control-group">
+      <div class="control-label">File Operations</div>
+      <div class="control-buttons">
+        <label for="fileInput" class="btn btn-primary">
+          <span>📁</span> Upload Log
+        </label>
+        <input id="fileInput" type="file" aria-label="Upload log file">
+        
+        <button id="startBtn" onclick="startStream()" class="btn btn-success" aria-label="Start streaming logs">
+          <span>▶</span> Start
+        </button>
+        
+        <button id="pauseBtn" onclick="pauseStream()" disabled class="btn btn-warning" aria-label="Pause streaming">
+          <span>⏸</span> Pause
+        </button>
+        
+        <button id="resumeBtn" onclick="resumeStream()" disabled class="btn btn-info" aria-label="Resume streaming">
+          <span>⏯</span> Resume
+        </button>
+        
+        <button id="stopBtn" onclick="stopStream()" disabled class="btn btn-danger" aria-label="Stop streaming">
+          <span>⏹</span> Stop
+        </button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">Export & Save</div>
+      <div class="control-buttons">
+        <button onclick="saveCurrentSession()" class="btn btn-secondary" aria-label="Save current session">
+          <span>💾</span> Save Session
+        </button>
+        
+        <button onclick="downloadLatestPDF()" class="btn btn-secondary" aria-label="Download latest PDF">
+          <span>📄</span> Download PDF
+        </button>
+        
+        <button id="downloadBtn" onclick="downloadReport()" class="btn btn-secondary" aria-label="Download report as JSON">
+          <span>📊</span> Download JSON
+        </button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">Playback Settings</div>
+      <div class="control-inputs">
+        <div class="input-wrapper">
+          <label for="speedSlider">Speed <span id="speedValue">300ms</span></label>
+          <input 
+            id="speedSlider" 
+            type="range" 
+            min="100" max="2000" step="50" value="300"
+            aria-label="Playback speed"
+            oninput="updateSpeedLabel(this.value)"
+          >
+        </div>
+        
+        <div class="input-wrapper">
+          <label for="replayPreset">Preset</label>
+          <select id="replayPreset" aria-label="Replay speed presets" onchange="setPreset(this.value)">
+            <option value="300">Medium (300ms)</option>
+            <option value="100">Fast (100ms)</option>
+            <option value="700">Slow (700ms)</option>
+          </select>
+        </div>
+        
+        <div class="input-wrapper checkbox-wrapper">
+          <input id="autoscroll" type="checkbox" checked aria-label="Enable auto-scroll">
+          <label for="autoscroll">Auto-scroll</label>
+        </div>
+        
+        <div class="input-wrapper checkbox-wrapper">
+          <input id="audioToggle" type="checkbox" checked aria-label="Enable audio alerts">
+          <label for="audioToggle">Audio Alert</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">Filters & Analysis</div>
+      <div class="control-inputs">
+        <div class="input-wrapper search-wrapper">
+          <label for="searchInput">🔍 Search</label>
+          <input 
+            id="searchInput" 
+            type="text" 
+            placeholder="keyword or /api/endpoint"
+            aria-label="Search logs"
+            oninput="applyFilter()"
+          >
+        </div>
+        
+        <div class="input-wrapper">
+          <label for="focusSelect">Focus Mode</label>
+          <select id="focusSelect" aria-label="Focus mode selector">
+            <option value="">--none--</option>
+          </select>
+        </div>
+        
+        <div class="input-wrapper">
+          <label for="anomalySens">Anomaly Sensitivity</label>
+          <input 
+            id="anomalySens" 
+            type="range" 
+            min="1" max="5" value="3"
+            aria-label="Anomaly sensitivity slider"
+          >
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN DASHBOARD -->
+  <div class="dashboard-grid">
+    
+    <!-- LEFT COLUMN -->
+    <div class="dashboard-left">
+      
+      <!-- LIVE LOGS -->
+      <div class="glass-card logs-card">
+        <div class="card-header">
+          <h2>📡 Live Logs</h2>
+          <div class="card-indicators">
+            <span class="indicator active"></span>
+            <span class="log-count" id="logCount">0 entries</span>
+          </div>
+        </div>
+        <div class="log-box" id="logBox" role="log" aria-live="polite"></div>
+      </div>
+
+      <!-- TERMINAL -->
+      <div class="glass-card terminal-card">
+        <div class="card-header">
+          <h2>⌨️ Neon Terminal</h2>
+        </div>
+        <div id="terminalOutput" class="terminal-output"></div>
+        <div class="terminal-row">
+          <span class="terminal-prompt">$</span>
+          <input 
+            id="terminalInput" 
+            placeholder="help | show errors | show endpoint /api/login"
+            aria-label="Terminal command input"
+            onkeydown="if(event.key==='Enter') runTerminalCommand()"
+          >
+          <button onclick="runTerminalCommand()" class="btn btn-terminal" aria-label="Run terminal command">Run</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="dashboard-right">
+      
+      <!-- SYSTEM HEALTH -->
+      <div class="glass-card health-card">
+        <div class="card-header">
+          <h2>🖥️ System Health</h2>
+        </div>
+        <div class="gauge-container">
+          <div class="gauge">
+            <svg viewBox="0 0 160 160">
+              <circle class="bg-circle" cx="80" cy="80" r="70"></circle>
+              <circle class="fg-circle" id="cpuCircle" cx="80" cy="80" r="70"></circle>
+            </svg>
+            <div class="gauge-content">
+              <div class="gauge-value" id="cpuValue">0</div>
+              <div class="gauge-label">CPU</div>
+            </div>
+          </div>
+          
+          <div class="gauge">
+            <svg viewBox="0 0 160 160">
+              <circle class="bg-circle" cx="80" cy="80" r="70"></circle>
+              <circle class="fg-circle" id="memCircle" cx="80" cy="80" r="70"></circle>
+            </svg>
+            <div class="gauge-content">
+              <div class="gauge-value" id="memValue">0</div>
+              <div class="gauge-label">MEM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- METRICS -->
+      <div class="metrics-grid">
+        <div class="metric-card glass-card">
+          <div class="metric-icon error-icon">⚠️</div>
+          <div class="metric-value" id="errCount">0</div>
+          <div class="metric-label">Errors</div>
+        </div>
+        
+        <div class="metric-card glass-card">
+          <div class="metric-icon warn-icon">⚡</div>
+          <div class="metric-value" id="warnCount">0</div>
+          <div class="metric-label">Warnings</div>
+        </div>
+        
+        <div class="metric-card glass-card">
+          <div class="metric-icon info-icon">ℹ️</div>
+          <div class="metric-value" id="infoCount">0</div>
+          <div class="metric-label">Info</div>
+        </div>
+        
+        <div class="metric-card glass-card">
+          <div class="metric-icon rps-icon">📈</div>
+          <div class="metric-value" id="rps">0</div>
+          <div class="metric-label">RPS</div>
+        </div>
+      </div>
+
+      <!-- PIE CHART -->
+      <div class="glass-card chart-card">
+        <div class="card-header">
+          <h2>📊 Level Distribution</h2>
+        </div>
+        <canvas id="pieChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW -->
+  <div class="charts-row">
+    
+    <div class="glass-card chart-card-wide">
+      <div class="card-header">
+        <h2>📈 Latency Timeline</h2>
+      </div>
+      <canvas id="lineChart"></canvas>
+    </div>
+    
+    <div class="glass-card chart-card-wide">
+      <div class="card-header">
+        <h2>⚡ Log Rate</h2>
+      </div>
+      <canvas id="rateChart"></canvas>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM CHARTS -->
+  <div class="charts-row">
+    
+    <div class="glass-card chart-card-wide">
+      <div class="card-header">
+        <h2>🎯 Endpoint Usage</h2>
+      </div>
+      <canvas id="endpointChart"></canvas>
+    </div>
+    
+    <div class="glass-card chart-card-wide">
+      <div class="card-header">
+        <h2>🔄 Request Methods</h2>
+      </div>
+      <canvas id="methodChart"></canvas>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Scripts -->
+<script>
+// Basic fallback functions if neon.js is not available
+function updateSpeedLabel(value) {
+  const speedValue = document.getElementById('speedValue');
+  if (speedValue) speedValue.textContent = value + 'ms';
+}
+
+function setPreset(value) {
+  const slider = document.getElementById('speedSlider');
+  if (slider) {
+    slider.value = value;
+    updateSpeedLabel(value);
+  }
+}
+
+function startStream() {
+  console.log('Start stream');
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('pauseBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = false;
+}
+
+function pauseStream() {
+  console.log('Pause stream');
+  document.getElementById('pauseBtn').disabled = true;
+  document.getElementById('resumeBtn').disabled = false;
+}
+
+function resumeStream() {
+  console.log('Resume stream');
+  document.getElementById('resumeBtn').disabled = true;
+  document.getElementById('pauseBtn').disabled = false;
+}
+
+function stopStream() {
+  console.log('Stop stream');
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('pauseBtn').disabled = true;
+  document.getElementById('resumeBtn').disabled = true;
+  document.getElementById('stopBtn').disabled = true;
+}
+
+function saveCurrentSession() {
+  console.log('Save session');
+  alert('Save functionality requires neon.js');
+}
+
+function downloadReport() {
+  console.log('Download report');
+  alert('Download functionality requires neon.js');
+}
+
+function applyFilter() {
+  console.log('Apply filter');
+}
+
+function runTerminalCommand() {
+  const input = document.getElementById('terminalInput');
+  const output = document.getElementById('terminalOutput');
+  if (input && output) {
+    const cmd = input.value.trim();
+    if (cmd) {
+      output.innerHTML += `<div style="color: #00fcef;">$ ${cmd}</div>`;
+      output.innerHTML += `<div style="color: #7ffaf0; margin-bottom: 10px;">Command requires neon.js to execute</div>`;
+      input.value = '';
+      output.scrollTop = output.scrollHeight;
+    }
+  }
+}
+
+// Initialize on load
+window.addEventListener('DOMContentLoaded', function() {
+  console.log('Neon Log Analyzer UI Loaded');
+  
+  // Set initial gauge values
+  const cpuCircle = document.getElementById('cpuCircle');
+  const memCircle = document.getElementById('memCircle');
+  const cpuValue = document.getElementById('cpuValue');
+  const memValue = document.getElementById('memValue');
+  
+  if (cpuCircle) cpuCircle.style.strokeDashoffset = '440';
+  if (memCircle) memCircle.style.strokeDashoffset = '440';
+  if (cpuValue) cpuValue.textContent = '0';
+  if (memValue) memValue.textContent = '0';
+  
+  // Add demo log
+  const logBox = document.getElementById('logBox');
+  if (logBox) {
+    logBox.innerHTML = `
+      <div class="log-line log-info">[2025-11-20 16:43:21] INFO: System initialized</div>
+      <div class="log-line log-info">[2025-11-20 16:43:22] INFO: Waiting for log file...</div>
+      <div class="log-line log-warn">[2025-11-20 16:43:23] WARN: neon.js not loaded - using demo mode</div>
+    `;
+  }
+});
+</script>
+<script src="/static/neon.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+[INFO] User requested /api/home took 120ms
+[INFO] Fetching user details took 98ms
+[WARN] Slow response detected in /api/payment took 350ms
+[INFO] User logged in successfully took 110ms
+[ERROR] Failed to connect to database
+[INFO] Processing transaction ID #44321 took 140ms
+[WARN] Memory usage is high on service: billing
+[INFO] Request to /api/cart took 95ms
+[INFO] Request to /api/products took 80ms
+[ERROR] Timeout while calling /api/verify
+[INFO] Background job executed took 130ms
+[WARN] High load on /api/auth took 280ms
+[INFO] Cache miss for /api/profile took 105ms
+[INFO] Cache hit for /api/profile took 65ms
+[ERROR] Authentication failed for token ID 88237
